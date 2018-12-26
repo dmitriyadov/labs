@@ -29,8 +29,12 @@ class ChatRPC(arrayOfProtocols: Array<Protocol>, name: String) {
     var messageHistory = ArrayDeque<String>()
 
     val channel = JChannel(*arrayOfProtocols).name(name)
-
+    
     val rpcDisp = RpcDispatcher(channel, this)
+
+    fun onMessage(message: String, sender: String) {
+        println("$sender: $message")
+    }
 
     init {
         channel.receiver = object : Receiver {
@@ -92,6 +96,7 @@ fun main(args: Array<String>) {
         val line = readLine() ?: break
 
         chat.rpcDisp.callRemoteMethods<Any>(null, MethodCall(method, line, chat.channel.name), RequestOptions())
+
     }
 
     chat.channel.close()
