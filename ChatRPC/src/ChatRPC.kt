@@ -70,3 +70,36 @@ class ChatRPC(arrayOfProtocols: Array<Protocol>, name: String) {
     }
 }
 
+fun main(args: Array<String>) {
+    if (args.size != 1 || System.getenv("HOSTNAME") == null) {
+        println("Specify cluster name in args and HOSTNAME environment variable")
+        return
+    }
+    val arrayOfProtocols = arrayOf(
+            UDP().setValue("bind_addr", InetAddress.getLocalHost()),
+            PING(),
+            MERGE3().setMinInterval(1000).setMaxInterval(5000),
+            FD_SOCK(),
+            FD_ALL(),
+            VERIFY_SUSPECT(),
+            BARRIER(),
+            NAKACK2(),
+            UNICAST3(),
+            STABLE(),
+            GMS(),
+            UFC(),
+            MFC(),
+            FRAG2())
+    val chat = ChatRPC(arrayOfProtocols, System.getenv("HOSTNAME"))
+    chat.channel.connect(args[0])
+    val method = chat.javaClass.getMethod("onMessage", String::class.java, String::class.java)
+    while (true) {
+        val line = readLine() ?: break
+
+        chat.rpcDisp.callRemoteMethods<Any>(null, MethodCall(method, line, chat.channel.name), RequestOptions())
+//        chat.channel.send(null, line.toByteArray())
+    }
+
+    chat.channel.close()
+}
+
