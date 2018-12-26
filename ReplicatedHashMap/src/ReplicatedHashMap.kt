@@ -1,5 +1,3 @@
-package hashmap
-
 import org.jgroups.JChannel
 import org.jgroups.Message
 import org.jgroups.Receiver
@@ -18,7 +16,8 @@ import java.io.InputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.OutputStream
-import kotlin.collections.HashMap
+import java.net.InetAddress
+import java.util.*
 
 
 class ReplicatedHashMap(arrayOfProtocols: Array<Protocol>, name: String) {
@@ -59,8 +58,8 @@ class ReplicatedHashMap(arrayOfProtocols: Array<Protocol>, name: String) {
         val receiver = object : Receiver {
             override fun getState(output: OutputStream?) {
                 val stream = ObjectOutputStream(output)
-                println("-- returning ${this@RHashMap.stocks.size} stocks")
-                stream.writeObject(this@RHashMap.stocks)
+                println("-- returning ${this@ReplicatedHashMap.stocks.size} stocks")
+                stream.writeObject(this@ReplicatedHashMap.stocks)
             }
 
             override fun receive(msg: Message?) {
@@ -81,7 +80,7 @@ class ReplicatedHashMap(arrayOfProtocols: Array<Protocol>, name: String) {
 
                     for ((key, value) in state) {
                         if (key is String && value is Double) {
-                            synchronized(this@RHashMap.stocks) {
+                            synchronized(this@ReplicatedHashMap.stocks) {
                                 stocks[key] = value
                             }
                         }
@@ -96,4 +95,80 @@ class ReplicatedHashMap(arrayOfProtocols: Array<Protocol>, name: String) {
 
     }
 
+}
+
+fun main(args: Array<String>) {
+    if (args.size != 1 || System.getenv("HOSTNAME") == null) {
+        println("Specify cluster name in args and HOSTNAME environment variable")
+        return
+    }
+    val arrayOfProtocols = arrayOf(
+            UDP().setValue("bind_addr", InetAddress.getLocalHost()),
+            PING(),
+            MERGE3().setMinInterval(1000).setMaxInterval(5000),
+            FD_SOCK(),
+            FD_ALL(),
+            VERIFY_SUSPECT(),
+            BARRIER(),
+            NAKACK2(),
+            UNICAST3(),
+            STABLE(),
+            GMS(),
+            UFC(),
+            MFC(),
+            FRAG2(), STATE_SOCK())
+    val hashmap = ReplicatedHashMap(arrayOfProtocols, System.getenv("HOSTNAME"))
+    hashmap.channel.connect(args[0])
+    hashmap.channel.getState(null, 10000)
+    val methodSet = hashmap.javaClass.getMethod("_setStock", String::class.java, Double::class.java)
+    val methodRemove = hashmap.javaClass.getMethod("_removeStock", String::class.java)
+    val compareAndSwapMethod = hashmap.javaClass.getMethod("_compareAndSwap", String::class.java,
+            Double::class.java, Double::class.java)
+    for (i in 1..1000000) {
+        hashmap.rpcDisp.callRemoteMethods<Any>(null, MethodCall(methodSet, "key", i), RequestOptions.SYNC())
+    }
+    while (true) {
+        println("[1] Show stocks [2] Get quote [3] Set quote [4] Remove quote [5] Compare-and-swap [ctrl-D] Exit")
+        val line = readLine() ?: break
+        when (line) {
+            "1" -> {
+                println("Stocks: ")
+                synchronized(hashmap.stocks) {
+                    hashmap.stocks.forEach { key, value -> println("$key: $value") }
+                }
+            }
+            "2" -> {
+                println("enter key")
+                val key = readLine() ?: println("error")
+                println("$key: ${hashmap.stocks[key]}")
+            }
+            "3" -> {
+                println("enter key")
+                val key = readLine() ?: println("error")
+                println("enter value (double)")
+                val result = readLine()
+                val value: Double = result!!.toDouble()
+                hashmap.rpcDisp.callRemoteMethods<Any>(null, MethodCall(methodSet, key, value), RequestOptions.SYNC())
+            }
+            "4" -> {
+                println("enter key")
+                val key = readLine() ?: println("error")
+                hashmap.rpcDisp.callRemoteMethods<Any>(null, MethodCall(methodRemove, key), RequestOptions.SYNC())
+            }
+            "5" -> {
+                println("enter key")
+                val key = readLine() ?: println("error")
+                println("enter reference value (double)")
+                var result = readLine()
+                val referenceValue: Double = result!!.toDouble()
+                println("enter new value (double)")
+                result = readLine()
+                val newValue: Double = result!!.toDouble()
+                hashmap.rpcDisp.callRemoteMethods<Any>(null, MethodCall(compareAndSwapMethod, key,
+                        referenceValue, newValue), RequestOptions.SYNC())
+            }
+        }
+    }
+
+    hashmap.channel.close()
 }
