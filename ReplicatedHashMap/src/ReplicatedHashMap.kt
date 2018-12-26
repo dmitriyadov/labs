@@ -54,4 +54,46 @@ class ReplicatedHashMap(arrayOfProtocols: Array<Protocol>, name: String) {
         return false
     }
 
+
+    init {
+        val receiver = object : Receiver {
+            override fun getState(output: OutputStream?) {
+                val stream = ObjectOutputStream(output)
+                println("-- returning ${this@RHashMap.stocks.size} stocks")
+                stream.writeObject(this@RHashMap.stocks)
+            }
+
+            override fun receive(msg: Message?) {
+                println("received message")
+            }
+
+            override fun viewAccepted(new_view: View?) {
+                println(new_view)
+            }
+
+
+            override fun setState(input: InputStream?) {
+                val stream = ObjectInputStream(input)
+                val state = stream.readObject()
+                if (state is HashMap<*, *>) {
+                    println("-- received ${state.size} stocks")
+                    stocks.clear()
+
+                    for ((key, value) in state) {
+                        if (key is String && value is Double) {
+                            synchronized(this@RHashMap.stocks) {
+                                stocks[key] = value
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+        channel.receiver = receiver
+        rpcDisp.setStateListener<MessageDispatcher>(receiver)
+        rpcDisp.start<MessageDispatcher>()
+
+    }
+
 }
