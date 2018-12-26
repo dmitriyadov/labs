@@ -66,3 +66,32 @@ class ChatDemo(arrayOfProtocols: Array<Protocol>, name: String) {
     }
 }
 
+fun main(args: Array<String>) {
+    if (args.size != 1 || System.getenv("HOSTNAME") == null) {
+        println("Specify cluster name in args and HOSTNAME environment variable")
+        return
+    }
+    val arrayOfProtocols = arrayOf(
+            UDP().setValue("bind_addr", InetAddress.getLocalHost()),
+            PING(),
+            MERGE3().setMinInterval(1000).setMaxInterval(5000),
+            FD_SOCK(),
+            FD_ALL(),
+            VERIFY_SUSPECT(),
+            BARRIER(),
+            NAKACK2(),
+            UNICAST3(),
+            STABLE(),
+            GMS(),
+            UFC(),
+            MFC(),
+            FRAG2())
+    val chat = ChatDemo(arrayOfProtocols, System.getenv("HOSTNAME"))
+    chat.channel.connect(args[0])
+    while (true) {
+        val line = readLine() ?: break
+        chat.channel.send(null, line.toByteArray())
+    }
+    chat.channel.close()
+}
+
