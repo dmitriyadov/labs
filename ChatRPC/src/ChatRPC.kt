@@ -29,7 +29,7 @@ class ChatRPC(arrayOfProtocols: Array<Protocol>, name: String) {
     var messageHistory = ArrayDeque<String>()
 
     val channel = JChannel(*arrayOfProtocols).name(name)
-    
+
     val rpcDisp = RpcDispatcher(channel, this)
 
     fun onMessage(message: String, sender: String) {
