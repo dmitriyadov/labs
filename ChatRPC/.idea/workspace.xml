@@ -19,9 +19,11 @@
       <file leaf-file-name="ChatRPC.kt" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/ChatRPC.kt">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="30">
-              <caret line="2" column="18" lean-forward="false" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="18" />
-              <folding />
+            <state relative-caret-position="380">
+              <caret line="93" column="112" lean-forward="false" selection-start-line="93" selection-start-column="112" selection-end-line="93" selection-end-column="112" />
+              <folding>
+                <element signature="e#17#602#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -371,9 +373,11 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/src/ChatRPC.kt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="30">
-          <caret line="2" column="18" lean-forward="false" selection-start-line="2" selection-start-column="11" selection-end-line="2" selection-end-column="18" />
-          <folding />
+        <state relative-caret-position="380">
+          <caret line="93" column="112" lean-forward="false" selection-start-line="93" selection-start-column="112" selection-end-line="93" selection-end-column="112" />
+          <folding>
+            <element signature="e#17#602#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

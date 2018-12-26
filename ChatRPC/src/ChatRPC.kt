@@ -6,7 +6,6 @@ import org.jgroups.Receiver
 import org.jgroups.View
 import org.jgroups.blocks.MethodCall
 import org.jgroups.blocks.RequestOptions
-import org.jgroups.blocks.ResponseMode
 import org.jgroups.blocks.RpcDispatcher
 import org.jgroups.protocols.*
 import org.jgroups.protocols.pbcast.GMS
@@ -32,10 +31,6 @@ class ChatRPC(arrayOfProtocols: Array<Protocol>, name: String) {
     val channel = JChannel(*arrayOfProtocols).name(name)
 
     val rpcDisp = RpcDispatcher(channel, this)
-
-    fun onMessage(message: String, sender: String) {
-        println("$sender: $message")
-    }
 
     init {
         channel.receiver = object : Receiver {
@@ -97,7 +92,6 @@ fun main(args: Array<String>) {
         val line = readLine() ?: break
 
         chat.rpcDisp.callRemoteMethods<Any>(null, MethodCall(method, line, chat.channel.name), RequestOptions())
-//        chat.channel.send(null, line.toByteArray())
     }
 
     chat.channel.close()
